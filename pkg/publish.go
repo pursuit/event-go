@@ -31,7 +31,7 @@ func StoreEvent(ctx context.Context, db DB, data EventData) error {
 	return nil
 }
 
-type KafkaConsumer struct {
+type KafkaPublishFromSQL struct {
 	Batch     uint
 	DB        *sql.DB
 	Kafka     sarama.SyncProducer
@@ -40,7 +40,7 @@ type KafkaConsumer struct {
 	stop bool
 }
 
-func (this *KafkaConsumer) Run() {
+func (this *KafkaPublishFromSQL) Run() {
 	for i := uint(1); i <= this.WorkerNum; i++ {
 		go func() {
 			for !this.stop {
@@ -55,11 +55,11 @@ func (this *KafkaConsumer) Run() {
 	}
 }
 
-func (this *KafkaConsumer) Shutdown() {
+func (this *KafkaPublishFromSQL) Shutdown() {
 	this.stop = true
 }
 
-func (this *KafkaConsumer) Process() error {
+func (this *KafkaPublishFromSQL) Process() error {
 	tx, err := this.DB.Begin()
 	if err != nil {
 		return err
@@ -119,6 +119,11 @@ func (this *KafkaConsumer) Process() error {
 		if err := rows.Err(); err != nil {
 			tx.Rollback()
 			return err
+		}
+
+		if len(idAry) == 0 {
+			tx.Rollback()
+			return sql.ErrNoRows
 		}
 
 		ids := strings.Join(idAry, "','")

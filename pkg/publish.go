@@ -76,7 +76,7 @@ func (this *KafkaConsumer) Process() error {
 			return err
 		}
 
-		_, err = tx.ExecContext(context.Background(), "DELETE FROM kafka_events where id = ?", id)
+		_, err = tx.ExecContext(context.Background(), "DELETE FROM events where id = ?", id)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -122,7 +122,7 @@ func (this *KafkaConsumer) Process() error {
 		}
 
 		ids := strings.Join(idAry, "','")
-		_, err = tx.ExecContext(context.Background(), fmt.Sprintf(`DELETE FROM kafka_events where id IN ('%s')`, ids))
+		_, err = tx.ExecContext(context.Background(), fmt.Sprintf(`DELETE FROM events where id IN ('%s')`, ids))
 		if err != nil {
 			tx.Rollback()
 			return err

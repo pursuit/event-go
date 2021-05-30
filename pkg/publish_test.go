@@ -117,10 +117,10 @@ func TestKafkaConsumer(t *testing.T) {
 				} else {
 					mock.ExpectQuery("SELECT id, topic, payload FROM events LIMIT 1 FOR UPDATE SKIP LOCKED").WillReturnRows(mock.NewRows([]string{"id", "topic", "payload"}).AddRow(id, topic, payload))
 					if testcase.deleteErr != nil {
-						mock.ExpectExec("DELETE FROM kafka_events where id = ?").WillReturnError(testcase.deleteErr)
+						mock.ExpectExec("DELETE FROM events where id = ?").WillReturnError(testcase.deleteErr)
 						mock.ExpectRollback()
 					} else {
-						mock.ExpectExec("DELETE FROM kafka_events where id = ?").WillReturnResult(sqlmock.NewResult(1, 1))
+						mock.ExpectExec("DELETE FROM events where id = ?").WillReturnResult(sqlmock.NewResult(1, 1))
 						if testcase.kafkaErr != nil {
 							kafka.EXPECT().SendMessage(gomock.Any()).Return(int32(1), int64(2), testcase.kafkaErr)
 							mock.ExpectRollback()
@@ -232,10 +232,10 @@ func TestKafkaConsumerBatch(t *testing.T) {
 					} else {
 						mock.ExpectQuery("SELECT id, topic, payload FROM events LIMIT 2 FOR UPDATE SKIP LOCKED").WillReturnRows(mock.NewRows([]string{"id", "topic", "payload"}).AddRow(id, topic, payload))
 						if testcase.deleteErr != nil {
-							mock.ExpectExec("DELETE FROM kafka_events where id IN \\('2'\\)").WillReturnError(testcase.deleteErr)
+							mock.ExpectExec("DELETE FROM events where id IN \\('2'\\)").WillReturnError(testcase.deleteErr)
 							mock.ExpectRollback()
 						} else {
-							mock.ExpectExec("DELETE FROM kafka_events where id IN \\('2'\\)").WillReturnResult(sqlmock.NewResult(1, 1))
+							mock.ExpectExec("DELETE FROM events where id IN \\('2'\\)").WillReturnResult(sqlmock.NewResult(1, 1))
 							if testcase.kafkaErr != nil {
 								kafka.EXPECT().SendMessages(gomock.Any()).Return(testcase.kafkaErr)
 								mock.ExpectRollback()

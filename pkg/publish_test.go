@@ -2,6 +2,7 @@ package pkg_test
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
 
@@ -49,7 +50,7 @@ func TestStoreEvent(t *testing.T) {
 	}
 }
 
-func TestKafkaConsumer(t *testing.T) {
+func TestKafkaPublishFromSQL(t *testing.T) {
 	id := 2
 	topic := "topic1"
 	payload := []byte(`{"foo":"bar"}`)
@@ -136,7 +137,7 @@ func TestKafkaConsumer(t *testing.T) {
 				}
 			}
 
-			consumer := pkg.KafkaConsumer{
+			consumer := pkg.KafkaPublishFromSQL{
 				DB:        db,
 				Kafka:     kafka,
 				Batch:     1,
@@ -160,13 +161,14 @@ func TestKafkaConsumer(t *testing.T) {
 	}
 }
 
-func TestKafkaConsumerBatch(t *testing.T) {
+func TestKafkaPublishFromSQLBatch(t *testing.T) {
 	id := 2
 	topic := "topic1"
 	payload := []byte(`{"foo":"bar"}`)
 
 	for _, testcase := range []struct {
 		tName     string
+		emptyRes  bool
 		txErr     error
 		queryErr  error
 		deleteErr error
@@ -183,6 +185,11 @@ func TestKafkaConsumerBatch(t *testing.T) {
 			tName:     "fail query",
 			queryErr:  errors.New("fail"),
 			outputErr: errors.New("fail"),
+		},
+		{
+			tName:     "empty result",
+			emptyRes: true,
+			outputErr: sql.ErrNoRows,
 		},
 		{
 			tName:     "fail scan",
@@ -229,6 +236,9 @@ func TestKafkaConsumerBatch(t *testing.T) {
 				} else {
 					if testcase.tName == "fail scan" {
 						mock.ExpectQuery("SELECT id, topic, payload FROM events LIMIT 2 FOR UPDATE SKIP LOCKED").WillReturnRows(mock.NewRows([]string{"id", "topic", "payload"}).AddRow("invalid id", topic, payload))
+					} else if testcase.emptyRes {
+						mock.ExpectQuery("SELECT id, topic, payload FROM events LIMIT 2 FOR UPDATE SKIP LOCKED").WillReturnRows(mock.NewRows([]string{"id", "topic", "payload"}))
+						mock.ExpectRollback()
 					} else {
 						mock.ExpectQuery("SELECT id, topic, payload FROM events LIMIT 2 FOR UPDATE SKIP LOCKED").WillReturnRows(mock.NewRows([]string{"id", "topic", "payload"}).AddRow(id, topic, payload))
 						if testcase.deleteErr != nil {
@@ -252,7 +262,7 @@ func TestKafkaConsumerBatch(t *testing.T) {
 				}
 			}
 
-			consumer := pkg.KafkaConsumer{
+			consumer := pkg.KafkaPublishFromSQL{
 				DB:        db,
 				Kafka:     kafka,
 				Batch:     2,

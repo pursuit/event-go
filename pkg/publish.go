@@ -35,6 +35,7 @@ type KafkaPublishFromSQL struct {
 	Batch     uint
 	DB        *sql.DB
 	Kafka     sarama.SyncProducer
+	QInterval time.Duration
 	WorkerNum uint
 
 	stop bool
@@ -45,7 +46,11 @@ func (this *KafkaPublishFromSQL) Run() {
 		go func() {
 			for !this.stop {
 				if err := this.Process(); err != nil {
-					time.Sleep(2 * time.Minute)
+					sleepInterval := this.QInterval
+					if err != sql.ErrNoRows {
+						sleepInterval = 2 * time.Minute
+					}
+					time.Sleep(sleepInterval)
 				}
 			}
 		}()

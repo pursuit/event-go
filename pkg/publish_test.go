@@ -188,7 +188,7 @@ func TestKafkaPublishFromSQLBatch(t *testing.T) {
 		},
 		{
 			tName:     "empty result",
-			emptyRes: true,
+			emptyRes:  true,
 			outputErr: sql.ErrNoRows,
 		},
 		{

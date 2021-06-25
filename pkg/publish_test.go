@@ -151,9 +151,6 @@ func TestKafkaPublishFromSQL(t *testing.T) {
 				t.Errorf("Test %s, err is %v, should be %v", testcase.tName, err, testcase.outputErr)
 			}
 
-			consumer.Shutdown()
-			consumer.Run()
-
 			if err := mock.ExpectationsWereMet(); err != nil {
 				panic(err)
 			}
@@ -275,9 +272,6 @@ func TestKafkaPublishFromSQLBatch(t *testing.T) {
 				(err != nil && testcase.outputErr.Error() != err.Error()) {
 				t.Errorf("Test %s, err is %v, should be %v", testcase.tName, err, testcase.outputErr)
 			}
-
-			consumer.Shutdown()
-			consumer.Run()
 
 			if err := mock.ExpectationsWereMet(); err != nil {
 				panic(err)

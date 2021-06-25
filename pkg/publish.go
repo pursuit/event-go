@@ -38,30 +38,35 @@ type KafkaPublishFromSQL struct {
 	QInterval time.Duration
 	WorkerNum uint
 
-	stop bool
+	stopChan chan struct{}
 }
 
 func (this *KafkaPublishFromSQL) Run() {
+	this.stopChan = make(chan struct{})
 	for i := uint(1); i <= this.WorkerNum; i++ {
 		go func() {
-			for !this.stop {
-				if err := this.Process(); err != nil {
-					sleepInterval := this.QInterval
-					if err != sql.ErrNoRows {
-						sleepInterval = 2 * time.Minute
+			for {
+				select {
+				case <-this.stopChan:
+					return
+				default:
+					if err := this.Process(); err != nil {
+						sleepInterval := this.QInterval
+						if err != sql.ErrNoRows {
+							sleepInterval += 10 * time.Second
+						}
+						time.Sleep(sleepInterval)
 					}
-					time.Sleep(sleepInterval)
 				}
 			}
 		}()
 	}
-
-	for !this.stop {
-	}
 }
 
 func (this *KafkaPublishFromSQL) Shutdown() {
-	this.stop = true
+	for i := uint(1); i <= this.WorkerNum; i++ {
+		this.stopChan <- struct{}{}
+	}
 }
 
 func (this *KafkaPublishFromSQL) Process() error {
